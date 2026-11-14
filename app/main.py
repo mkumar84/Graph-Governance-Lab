@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -13,8 +14,23 @@ from .models import Graph, LintReport
 GRAPHS_DIR = Path(__file__).resolve().parent.parent / "graphs"
 
 app = FastAPI(title="Graph Governance Lab", version="0.1.0")
-# Open CORS for the Lovable frontend during Phase 1; tighten before any deploy.
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# Browsers may call this API only from these origins. Add more with the
+# CORS_ORIGINS environment variable (comma-separated, exact origins).
+DEFAULT_ORIGINS = [
+    "https://graph-gov-lab.lovable.app",
+    "https://id-preview--0cf79d66-cfd5-4bf6-9859-52bf26948c5c.lovable.app",
+    "http://localhost:8080",
+    "http://localhost:5173",
+]
+ALLOWED_ORIGINS = DEFAULT_ORIGINS + [
+    o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/health")

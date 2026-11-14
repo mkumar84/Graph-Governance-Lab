@@ -17,6 +17,13 @@ Phase 1 (lint engine and schema) is in place. Later phases are gated by assumpti
 | 4 | Self-healing levels 3-4, approval and rollback | Not started |
 | 5 | Bad-vs-good graph demo, metrics, content | Not started |
 
+## Live demo
+
+- Canvas (Lovable): https://graph-gov-lab.lovable.app
+- API (Railway): https://api-production-4f960576.up.railway.app
+
+The API accepts browser requests only from the canvas origins listed in `app/main.py`. Add more with the `CORS_ORIGINS` environment variable (comma-separated).
+
 ## The six lint rules
 
 1. **Verifier downstream:** every producer has a verifier after it that lists it in `verifies`.
@@ -30,7 +37,7 @@ Phase 1 (lint engine and schema) is in place. Later phases are gated by assumpti
 
 ```bash
 pip install -r requirements.txt
-pytest -q                                   # 18 tests
+pytest -q                                   # 20 tests
 python -m app.cli graphs/*.json             # lint every example graph
 uvicorn app.main:app --reload               # API on :8000
 ```

@@ -115,3 +115,23 @@ def test_api_lists_rules_and_examples():
     assert len(client.get("/examples").json()) == 7
     assert client.get("/examples/meridian_claims_triage_clean/lint").json()["passed"] is True
     assert client.get("/examples/nope").status_code == 404
+
+
+def test_cors_allows_the_published_canvas_only():
+    ok = client.get("/health", headers={"Origin": "https://graph-gov-lab.lovable.app"})
+    assert ok.headers.get("access-control-allow-origin") == "https://graph-gov-lab.lovable.app"
+    other = client.get("/health", headers={"Origin": "https://evil.example.com"})
+    assert "access-control-allow-origin" not in other.headers
+
+
+def test_cors_preflight_for_lint_post():
+    resp = client.options(
+        "/lint",
+        headers={
+            "Origin": "https://graph-gov-lab.lovable.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers["access-control-allow-origin"] == "https://graph-gov-lab.lovable.app"
