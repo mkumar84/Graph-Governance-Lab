@@ -1,0 +1,185 @@
+{
+  "name": "seeded_1_no_verifier",
+  "description": "Advocate has no verifier downstream.",
+  "nodes": [
+    {
+      "id": "intake",
+      "name": "Intake",
+      "role": "producer",
+      "model_family": "family_a",
+      "context_allowlist": [
+        "claim_documents"
+      ]
+    },
+    {
+      "id": "extractor",
+      "name": "Signal extractor",
+      "role": "producer",
+      "model_family": "family_a",
+      "context_allowlist": [
+        "claim_facts"
+      ],
+      "heal_policy": {
+        "max_attempts": 2,
+        "budget_usd": 1.0,
+        "escalate_to": "human_gate",
+        "can_write": [
+          "prompt_patch"
+        ]
+      }
+    },
+    {
+      "id": "fact_check",
+      "name": "Fact check",
+      "role": "verifier",
+      "model_family": "family_b",
+      "verifies": [
+        "intake",
+        "extractor"
+      ],
+      "context_allowlist": [
+        "claim_facts",
+        "flags"
+      ]
+    },
+    {
+      "id": "skeptic",
+      "name": "Skeptic",
+      "role": "producer",
+      "model_family": "family_a",
+      "context_allowlist": [
+        "claim_facts",
+        "flags",
+        "judge_feedback"
+      ],
+      "heal_policy": {
+        "max_attempts": 2,
+        "budget_usd": 1.0,
+        "escalate_to": "human_gate",
+        "can_write": [
+          "prompt_patch"
+        ]
+      }
+    },
+    {
+      "id": "advocate",
+      "name": "Advocate",
+      "role": "producer",
+      "model_family": "family_a",
+      "context_allowlist": [
+        "claim_facts",
+        "flags"
+      ]
+    },
+    {
+      "id": "judge",
+      "name": "Independent judge",
+      "role": "verifier",
+      "model_family": "family_b",
+      "verifies": [
+        "skeptic"
+      ],
+      "context_allowlist": [
+        "skeptic_argument",
+        "advocate_argument",
+        "flags"
+      ]
+    },
+    {
+      "id": "human_gate",
+      "name": "Analyst gate",
+      "role": "gate",
+      "context_allowlist": [
+        "judge_ruling"
+      ]
+    },
+    {
+      "id": "refer_siu",
+      "name": "Refer to investigations",
+      "role": "action",
+      "action_tier": "prohibited",
+      "context_allowlist": [
+        "judge_ruling"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "intake",
+      "target": "extractor",
+      "context": [
+        "claim_facts"
+      ]
+    },
+    {
+      "source": "extractor",
+      "target": "fact_check",
+      "context": [
+        "claim_facts",
+        "flags"
+      ]
+    },
+    {
+      "source": "fact_check",
+      "target": "skeptic",
+      "context": [
+        "claim_facts",
+        "flags"
+      ]
+    },
+    {
+      "source": "fact_check",
+      "target": "advocate",
+      "context": [
+        "claim_facts",
+        "flags"
+      ]
+    },
+    {
+      "source": "skeptic",
+      "target": "judge",
+      "context": [
+        "skeptic_argument"
+      ]
+    },
+    {
+      "source": "advocate",
+      "target": "judge",
+      "context": [
+        "advocate_argument"
+      ]
+    },
+    {
+      "source": "judge",
+      "target": "skeptic",
+      "context": [
+        "judge_feedback"
+      ]
+    },
+    {
+      "source": "judge",
+      "target": "human_gate",
+      "context": [
+        "judge_ruling"
+      ]
+    },
+    {
+      "source": "human_gate",
+      "target": "refer_siu",
+      "context": [
+        "judge_ruling"
+      ]
+    }
+  ],
+  "loops": [
+    {
+      "nodes": [
+        "skeptic",
+        "judge"
+      ],
+      "stop_condition": "judge score >= 0.85",
+      "max_iterations": 3,
+      "budget_usd": 2.0
+    }
+  ]
+}
