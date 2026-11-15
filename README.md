@@ -6,16 +6,16 @@ All companies, claims and data in this repo are fictional (Meridian Insurance Gr
 
 ## Status
 
-Phase 1 (lint engine and schema) is in place. Later phases are gated by assumption tests from the Phase 0 PRD.
+Phases 1 to 4 are built in the backend. Agents are **simulated** (no model is called), so every score here comes from the simulation assumptions in `app/sim.py`, not from a real model. What the lab proves is the governance mechanics. Swap `producer_score` and `verifier_flags` for real model calls to measure real models.
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Discovery, opportunity solution tree, evals-first PRD | Done |
-| 1 | Graph schema, six lint rules, Meridian graph, seeded-defect tests | Backend done; Lovable canvas next |
-| 2 | Runner, receipts, eval harness, independent judge | Not started |
-| 3 | Self-healing levels 1-2, threshold bands | Not started |
-| 4 | Self-healing levels 3-4, approval and rollback | Not started |
-| 5 | Bad-vs-good graph demo, metrics, content | Not started |
+| 1 | Graph schema, six lint rules, Meridian graph, seeded-defect tests | Done (canvas live) |
+| 2 | Runner, hash-chained receipts, golden set, judge experiment | Done (simulated agents) |
+| 3 | Self-healing levels 1-3, quality bands, heal-rate alert | Done (simulated agents) |
+| 4 | Level 4 persistent change with golden-set test, approval, rollback; level 5 proposals | Done (in-memory state) |
+| 5 | Bad-vs-good demo, metrics, content | In progress |
 
 ## Live demo
 
@@ -37,12 +37,23 @@ The API accepts browser requests only from the canvas origins listed in `app/mai
 
 ```bash
 pip install -r requirements.txt
-pytest -q                                   # 20 tests
+pytest -q                                   # 39 tests
 python -m app.cli graphs/*.json             # lint every example graph
 uvicorn app.main:app --reload               # API on :8000
 ```
 
-API: `POST /lint` (graph JSON in, report out), `GET /rules`, `GET /examples`, `GET /examples/{name}/lint`.
+API:
+
+| Endpoint | What it does |
+| --- | --- |
+| `POST /lint`, `GET /rules`, `GET /examples[/{name}[/lint]]` | Phase 1 lint |
+| `POST /run` | Simulated run with receipts. A graph that fails lint gets 409 unless `override_lint` is set (demo only) |
+| `GET /cases` | Golden set (30, held out from the healer) and dev set (40) |
+| `POST /metrics` | First-pass, heal-success and escalation rates, per-node heal rate, heal-rate alerts. Accepts `faults` to seed an upstream defect |
+| `GET /evals/judge` | Assumption test 1: independent vs same-family judge catch rate on planted defects (simulated) |
+| `POST /evals/agreement` | Assumption test 2: judge-vs-human agreement and kappa from real labels |
+| `POST /heal/propose`, `/heal/changes/{id}/approve`, `/heal/changes/{id}/rollback`, `GET /heal/changes` | Level 4 persistent change. Tested on the golden set, needs a named approver, reversible. Writes to gates, thresholds, lint rules or heal policy get 403 |
+| `POST /heal/topology` | Level 5 suggestions from lint findings. Never applied |
 
 ## Assumption test 4
 
@@ -51,7 +62,7 @@ Lint rules can be checked from the graph definition alone. `graphs/` holds one c
 ## Layout
 
 ```
-app/        schema (models.py), lint rules (lint.py), API (main.py), CLI (cli.py)
+app/        schema (models.py), lint (lint.py), simulator/runner/healing (sim.py), levels 4-5 (changes.py), API (main.py), CLI (cli.py)
 graphs/     example graphs as JSON
 scripts/    example graph generator
 tests/      pytest suite
