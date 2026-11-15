@@ -135,3 +135,12 @@ def test_cors_preflight_for_lint_post():
     )
     assert resp.status_code == 200
     assert resp.headers["access-control-allow-origin"] == "https://graph-gov-lab.lovable.app"
+
+
+def test_null_envelope_and_verifies_accepted():
+    from fastapi.testclient import TestClient
+    from app.main import app
+    g = {"name": "t", "nodes": [{"id": "a", "role": "producer", "envelope": None,
+                                  "verifies": None, "context_allowlist": []}]}
+    r = TestClient(app).post("/lint", json=g)
+    assert r.status_code == 200, r.text

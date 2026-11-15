@@ -51,6 +51,15 @@ class Node(BaseModel):
     envelope: Envelope = Field(default_factory=Envelope)
     heal_policy: Optional[HealPolicy] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _null_means_default(cls, data):
+        # Clients often send explicit nulls for optional fields; treat as unset.
+        if isinstance(data, dict):
+            data = {k: v for k, v in data.items()
+                    if not (v is None and k in ("envelope", "verifies"))}
+        return data
+
 
 class Edge(BaseModel):
     source: str
